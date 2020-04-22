@@ -1,5 +1,5 @@
 // https://stackoverflow.com/a/32278428
-export function isJson(str) {
+function isJson(str) {
     try {
       return JSON.parse(str) && !!str;
   } catch (e) {
@@ -8,7 +8,7 @@ export function isJson(str) {
 }
 
 // https://stackoverflow.com/a/32516190
-export function trimChar(s, c) {
+function trimChar(s, c) {
   if (c === "]") c = "\\]";
   if (c === "\\") c = "\\\\";
   return s.replace(new RegExp(
@@ -16,11 +16,18 @@ export function trimChar(s, c) {
   ), "");
 }
 
-export function isObject(object) {
+function isObject(object) {
   return Object.prototype.toString.call(object) === '[object Object]'
 }
 
 // https://stackoverflow.com/a/1026087
-export function capitalize(string) {
+function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+module.exports = {
+  isJson: isJson,
+  trimChar: trimChar,
+  isObject: isObject,
+  capitalize: capitalize
 }
