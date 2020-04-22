@@ -9,6 +9,7 @@ class Sftp extends EventEmitter {
   constructor() {
     super()
     this.client = new sftpClient;
+    this.filter = [];
   }
 
   setFilter(filter) {
@@ -34,7 +35,7 @@ class Sftp extends EventEmitter {
     });
 
     this.client.on('download', info => {
-      this.emit('download', { status: true, file: info.source });
+      this.emit('download', { status: true, file: info.destination });
     });
   }
 
@@ -52,32 +53,30 @@ class Sftp extends EventEmitter {
       const checkSrc = await this.client.exists(src);
 
       if ( ! checkSrc) {
-        this.emit('download', { file: src, status: false, msg: 'source not exists'});
-        return false;
-      }
-
-      if (checkSrc == '-') {
-        this.emit('download', { file: src, status: false, msg: 'cannot download symlink'});
+        this.emit('download', { file: src, status: false, msg: 'source is not exist'});
         return false;
       }
 
       if (checkSrc == 'd') {
-        await this._downloadDir(src, dst);
+        return await this._downloadDir(src, dst);
       }
-      else {
-        await this._downloadFile(src, dst);
-      }
+      
+      return await this._downloadFile(src, dst);
     } catch(e) {
+      console.error(e);
+      this.emit('download', { file: src, status: false });
       return false;
     }
   }
 
   async _downloadFile(src, dst) {
     try {
-      await this.client.fastGet(src, dst);
+      const file = fs.createWriteStream(dst);
+      await this.client.get(src, file);
       this.emit('download', { status: true, file: src });
       return true;
     } catch(e) {
+      console.error(e);
       this.emit('download', { status: false, file: src });
       return false;
     }
@@ -114,6 +113,7 @@ class Sftp extends EventEmitter {
 
       return true;
     } catch(e) {
+      console.error(e);
       this.emit('download', { file: src, status: false });
       return false;
     }
@@ -142,6 +142,7 @@ class Sftp extends EventEmitter {
 
       return false;
     } catch(e) {
+      console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
     }
@@ -152,23 +153,19 @@ class Sftp extends EventEmitter {
       const dstPath = path.dirname(dst);
       const dstPathType = await this.client.exists(dstPath);
   
-      try {
-        if (dstPathType != 'd') {
-          if (dstPathType) {
-            await this.client.delete(dstPathType);
-          }
-    
-          await this.client.mkdir(dstPath, true);
+      if (dstPathType != 'd') {
+        if (dstPathType) {
+          await this.client.delete(dstPathType);
         }
-        
-        await this.client.fastPut(src, dst)
-        this.emit('upload', { status: true, file: dst });
-        return true;
-      } catch(e) {
-        this.emit('upload', { status: false, file: dst });
-        return false;
-      }    
+  
+        await this.client.mkdir(dstPath, true);
+      }
+      
+      await this.client.fastPut(src, dst)
+      this.emit('upload', { status: true, file: dst });
+      return true;
     } catch(e) {
+      console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
     }
@@ -198,12 +195,13 @@ class Sftp extends EventEmitter {
         });
       }
   
-      this.client.uploadDir(path.join(src, tempSrc), dst);
+      await this.client.uploadDir(path.join(src, tempSrc), dst);
       
       if (tempSrc) {
         fse.removeSync(path.join(src, tempSrc));
       }
     } catch(e) {
+      console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
     }
@@ -211,40 +209,43 @@ class Sftp extends EventEmitter {
 
   async delete(src) {
     try {
-      const checkSrc = await this.isExists(src);
+      const checkSrc = await this.client.exists(src);
 
       if (checkSrc == 'd') {
         await this.client.rmdir(src, true);
-        this.emit('remove', { file: src, status: true, type: checkSrc });        
+        this.emit('delete', { file: src, status: true, type: checkSrc });        
       }
       else {
         if (! checkSrc) {
-          this.emit('remove', { file: src, status: true, type: checkSrc });
+          this.emit('delete', { file: src, status: false, msg: 'source is not exists' });
         }
         else {
           await this.client.delete(src);
-          this.emit('remove', { file: src, status: true, type: checkSrc });
+          this.emit('delete', { file: src, status: true, type: checkSrc });
         }
       }
 
       return true;
     } catch(e) {
-      this.emit('remove', { file: src, status: false });
+      console.error(e);
+      this.emit('delete', { file: src, status: false });
       return false;
     }
   }
 
   async move(src, dst) {
     try {
-      const checkSrc = await this.isExists(src);
+      const checkSrc = await this.client.exists(src);
 
       if ( ! checkSrc) {
         this.emit('move', { file: src, status: false, msg: 'source not exists'});
         return false;
       }
 
-      await this.rename(src, dst);
+      await this.client.rename(src, dst);
+      this.emit('move', { file: src, status: true });
     } catch(e) {
+      console.error(e);
       this.emit('move', { file: dst, status: false });
       return false;
     }
