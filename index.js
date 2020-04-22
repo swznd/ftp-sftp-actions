@@ -43,12 +43,18 @@ const sftpClient = require('./sftp');
     if (info.status) core.debug(`Uploaded: ${info.file}`);
     core.error(`Upload Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
   });
+  client.on('close', info => {
+    if (info.status) core.debug('Connection closed');
+    else core.warning('Close connection Failed');
+  });
 
   client.connect(hostURL.host, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp' ? secure : privateKey);
 
   for (const action in actions) {
     const cmdArgs = action.split(' ');
     if (availableCommands.indexOf(cmdArgs[0]) === -1) continue;
-    await actions[cmdArgs[0]].apply(null, cmdArgs.slice(1));
+    await client[actions[cmdArgs[0]]].apply(null, cmdArgs.slice(1));
   }
+
+  await client.close();
 })();

@@ -23,6 +23,15 @@ class Ftp extends EventEmitter {
     }
   }
 
+  async close() {
+    try {
+      await this.client.end();
+      this.emit('close', { status: true });
+    } catch(e) {
+      this.emit('close', { status: false });
+    }
+  }
+
   async download(src, dst) {
     try {
       const checkSrc = await this.isExists(src);
