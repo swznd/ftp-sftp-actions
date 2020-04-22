@@ -5,6 +5,7 @@ const fs = require('fs');
 
 class Ftp extends EventEmitter {
   constructor() {
+    super();
     this.client = new ftpClient;
   }
 

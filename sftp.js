@@ -7,6 +7,7 @@ const fse = require('fs-extra');
 
 class Sftp extends EventEmitter {
   constructor() {
+    super()
     this.client = new sftpClient;
   }
 
