@@ -1,7 +1,6 @@
 const ftpClient = require("promise-ftp");
 const path = require('path');
 const fs = require('fs');
-const micromatch = require('micromatch');
 
 class Ftp extends EventEmitter {
   constructor() {
@@ -21,6 +20,10 @@ class Ftp extends EventEmitter {
     } catch(e) {
       this.emit('connect', { status: false });
     }
+  }
+
+  setFilter(filter) {
+    this.filter = filter;
   }
 
   async close() {
@@ -96,10 +99,15 @@ class Ftp extends EventEmitter {
   }
 
   async _downloadFromDir(src, dst) {
-    const lists = await this.client.list(dst);
+    const lists = await this.client.list(src);
 
     for(const list of lists) {
-      if (list.type == 'd') await this._downloadFromDir(path.join(dst, list), dst);
+      if (this.filter.length && micromatch.isMatch(list.name, this.filter)) {
+        this.emit('download', { file: list.name, status: false, ignored: true });
+        continue;
+      }
+
+      if (list.type == 'd') await this._downloadFromDir(path.join(src, list.name), dst);
       else {
         await this._downloadFile(src, dst);
       }
@@ -121,7 +129,7 @@ class Ftp extends EventEmitter {
       }
   
       if (stat.isDirectory()) {
-        return await this._uploadDir(src, dst, filter);
+        return await this._uploadDir(src, dst);
       }
       else if (stat.isFile()) {
         return await this._uploadFile(src, dst,);
@@ -156,13 +164,15 @@ class Ftp extends EventEmitter {
     }
   }
 
-  async _uploadDir(src, dst, filter) {
+  async _uploadDir(src, dst) {
     try {  
       const files = fs.readdirSync(src, { withFileTypes: true });
-      const ignore = filter ? filter.split(',').filter(Boolean) : [];
   
       for (const file of files) {
-        if (ignore.length && micromatch.isMatch(file.name, ignore)) continue;
+        if (this.filter.length && micromatch.isMatch(file.name, this.filter)) {
+          this.emit('upload', { file: file.name, status: false, ignored: true });
+          continue;
+        }
   
         const fullPath = path.join(src, file.name);
         if (file.isFile()) {

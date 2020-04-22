@@ -9,6 +9,10 @@ class Sftp extends EventEmitter {
     this.client = new sftpClient;
   }
 
+  setFilter(filter) {
+    this.filter = filter;
+  }
+
   async connect(host, port, user, password, privateKey) {
     try {
       await this.client.connect({
@@ -86,7 +90,26 @@ class Sftp extends EventEmitter {
         this.emit('download', { file: src, status: false, msg: 'destination is exist and not a directory' });
       }
 
-      await this.client.downloadDir(src, dst);
+      let tempSrc = '';
+
+      if (this.filter.length) {
+        tempSrc = '.tmp-sftp';
+      }
+
+      await this.client.downloadDir(src, path.join(dst, tempSrc));
+
+      if (tempSrc) {
+        fse.copySync(path.join(dst, tempSrc), dst, (src, dst) => {
+          if (micromatch.isMatch(src, this.filter)) {
+            this.emit('download', { file: src, status: false, ignored: true });
+            return false;
+          }
+
+          return true;
+        });
+        fse.removeSync(path.join(dst, tempSrc));
+      }
+
       return true;
     } catch(e) {
       this.emit('download', { file: src, status: false });
@@ -94,7 +117,7 @@ class Sftp extends EventEmitter {
     }
   }
 
-  async upload(src, dst, filter) {
+  async upload(src, dst) {
     try {
       if ( ! fs.existsSync(src)) {
         this.emit('upload', { file: dst, status: false, msg: 'source not exist' });
@@ -109,7 +132,7 @@ class Sftp extends EventEmitter {
       }
   
       if (stat.isDirectory()) {
-        return await this._uploadDir(src, dst, filter);
+        return await this._uploadDir(src, dst);
       }
       else if (stat.isFile()) {
         return await this._uploadFile(src, dst);
@@ -149,7 +172,7 @@ class Sftp extends EventEmitter {
     }
   }
 
-  async _uploadDir(src, dst, filter) {
+  async _uploadDir(src, dst) {
     try {
       if ( ! fs.existsSync(src)) {
         this.emit('upload', { file: dst, status: false, msg: 'source not exist' });
@@ -160,11 +183,17 @@ class Sftp extends EventEmitter {
       }
   
       let tempSrc = '';
-      const ignore = filter ? filter.split(',').filter(Boolean) : [];
   
-      if (ignore.length) {
-        tempSrc = '__upload-sftp-tmp';
-        fse.copySync(path.join(src, file), path.join(src, tempSrc), (src, dst) => micromatch.isMatch(src, ignore));
+      if (this.filter.length) {
+        tempSrc = '.tmp-sftp';
+        fse.copySync(path.join(src, file), path.join(src, tempSrc), (src, dst) => {
+          if (micromatch.isMatch(src, this.filter)) {
+            this.emit('upload', { file: src, status: false, ignored: true });
+            return false;
+          }
+
+          return true;
+        });
       }
   
       this.client.uploadDir(path.join(src, tempSrc), dst);
