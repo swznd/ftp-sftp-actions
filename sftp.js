@@ -169,7 +169,7 @@ class Sftp extends EventEmitter {
     }
   }
 
-  async remove(src) {
+  async delete(src) {
     try {
       const checkSrc = await this.isExists(src);
 

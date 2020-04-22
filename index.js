@@ -11,7 +11,7 @@ const sftpClient = require('./sftp');
   const secure = core.getInput('secure');
   const actions = core.getInput('actions', { required: true }).split('\n');
   
-  const availableCommands = ['download', 'downloadFromDir', 'upload', 'uploadFromDir'];
+  const availableCommands = ['download', 'upload', 'move', 'delete'];
   
   const hostURL = url.parse(host);
 
