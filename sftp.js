@@ -249,4 +249,4 @@ class Sftp extends EventEmitter {
   }
 }
 
-export default Sftp;
+module.exports = Sftp;

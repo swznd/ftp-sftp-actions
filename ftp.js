@@ -257,4 +257,4 @@ class Ftp extends EventEmitter {
   }
 }
 
-export default Ftp;
+module.exports = Ftp;
