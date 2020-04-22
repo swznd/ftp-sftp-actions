@@ -7,6 +7,7 @@ class Ftp extends EventEmitter {
   constructor() {
     super();
     this.client = new ftpClient;
+    this.filter = [];
   }
 
   async connect(host, port, user, password, secure) {
@@ -45,21 +46,14 @@ class Ftp extends EventEmitter {
         this.emit('download', { file: src, status: false, msg: 'source not exists'});
         return false;
       }
-
-      if (checkSrc == '-') {
-        this.emit('download', { file: src, status: false, msg: 'cannot download symlink'});
-        return false;
-      }
       
       if (checkSrc == 'd') {
         return await this._downloadDir(src, dst);
       }
-      else if (checkSrc == 'f') {
-        return await this._download(src, dst);
-      }
-
-      return false;
+      
+      return await this._downloadFile(src, dst);
     } catch(e) {
+      onsole.error(e);
       this.emit('download', { file: src, status: false });
       return false;      
     }
@@ -69,15 +63,12 @@ class Ftp extends EventEmitter {
     try {
       const file = await this.client.get(src);
       await new Promise((resolve, reject) => {
-        file.createReadStream().pipe(
-          fs.createWriteStream(dst)
-        )
-        .on('close', resolve)
-        .on('error', reject);
+        file.pipe(fs.createWriteStream(dst)).on('close', resolve).on('error', reject);
       });
       this.emit('download', { file: src, status: true });
       return true;
     } catch(e) {
+      console.error(e);
       this.emit('download', { file: src, status: false });
       return false;
     }
@@ -96,27 +87,27 @@ class Ftp extends EventEmitter {
       return true;
     }
     catch {
+      onsole.error(e);
       this.emit('download', { file: src, status: false });
     }
   }
 
   async _downloadFromDir(src, dst) {
     const lists = await this.client.list(src);
-
     for(const list of lists) {
       if (this.filter.length && micromatch.isMatch(list.name, this.filter)) {
-        this.emit('download', { file: list.name, status: false, ignored: true });
+        this.emit('download', { file: path.join(src, list.name), status: false, ignored: true });
         continue;
       }
 
-      if (list.type == 'd') await this._downloadFromDir(path.join(src, list.name), dst);
+      if (list.type == 'd') await this._downloadDir(path.join(src, list.name), path.join(dst, list.name));
       else {
-        await this._downloadFile(src, dst);
+        await this._downloadFile(path.join(src, list.name), path.join(dst, list.name));
       }
     }
   }
 
-  async upload(src, dst, filter) {
+  async upload(src, dst) {
     try {
       if ( ! fs.existsSync(src)) {
         this.emit('upload', { file: dst, status: false, msg: 'source not exist' });
@@ -139,6 +130,7 @@ class Ftp extends EventEmitter {
 
       return false;
     } catch(e) {
+      console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
     }
@@ -161,6 +153,7 @@ class Ftp extends EventEmitter {
       this.emit('upload', { file: dst, status: true });
       return true;
     } catch(e) {
+      console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
     }
@@ -180,20 +173,22 @@ class Ftp extends EventEmitter {
         if (file.isFile()) {
           try {
             await this.client.put(fullPath, path.join(dst, file.name));
-            this.emit('upload', { file: dst, status: true });
+            this.emit('upload', { file: `${src}/file.name`, status: true });
           } catch(e) {
             await this.client.put(fullPath, path.join(dst, file.name));
-            this.emit('upload', { file: dst, status: false });
+            this.emit('upload', { file: `${src}/file.name`, status: false });
             return false;
           }
         }
         else if (file.isDirectory()) {
           await this.client.mkdir(path.join(dst, file.name), true);
+          await this._uploadDir(path.join(src, file.name), path.join(dst, file.name));
         }
       }
 
       return true;
     } catch(e) {
+      console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
     }
@@ -205,21 +200,22 @@ class Ftp extends EventEmitter {
 
       if (checkSrc == 'd') {
         await this.client.rmdir(src, true);
-        this.emit('remove', { file: src, status: true, type: checkSrc });        
+        this.emit('delete', { file: src, status: true, type: checkSrc });        
       }
       else {
         if (! checkSrc) {
-          this.emit('remove', { file: src, status: true, type: checkSrc });
+          this.emit('delete', { file: src, status: false, msg: 'source is not exist' });
         }
         else {
           await this.client.delete(src);
-          this.emit('remove', { file: src, status: true, type: checkSrc });
+          this.emit('delete', { file: src, status: true, type: checkSrc });
         }
       }
 
       return true;
     } catch(e) {
-      this.emit('remove', { file: src, status: false });
+      console.error(e);
+      this.emit('delete', { file: src, status: false });
       return false;
     }
   }
@@ -233,7 +229,8 @@ class Ftp extends EventEmitter {
         return false;
       }
 
-      await this.rename(src, dst);
+      await this.client.rename(src, dst);
+      this.emit('move', { file: src, status: true });
     } catch(e) {
       this.emit('move', { file: dst, status: false });
       return false;
