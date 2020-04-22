@@ -33,7 +33,7 @@ const utils = require('./utils');
     core.setFailed('Password is required');
   }
 
-  if (['ftp', 'sftp'].indexOf(hostURL.protocol) === -1) {
+  if (['ftp:', 'sftp:'].indexOf(hostURL.protocol) === -1) {
     core.setFailed(`${hostURL.protocol} is not supported`);
   }
 
@@ -57,7 +57,7 @@ const utils = require('./utils');
     parsedActions = actions.split('\n');
   }
 
-  const client = hostURL.protocol === 'ftp' ? new ftpClient : new sftpClient;
+  const client = hostURL.protocol === 'ftp:' ? new ftpClient : new sftpClient;
   client.on('connect', info => {
     if (info.status) core.debug('Connected!');
     else core.error('Connecion Failed');
