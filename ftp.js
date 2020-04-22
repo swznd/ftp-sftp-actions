@@ -1,3 +1,4 @@
+const EventEmitter = require('events');
 const ftpClient = require("promise-ftp");
 const path = require('path');
 const fs = require('fs');

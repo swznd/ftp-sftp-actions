@@ -1,3 +1,4 @@
+const EventEmitter = require('events');
 const sftpClient = require('ssh2-sftp-client');
 const path = require('path');
 const fs = require('fs');
