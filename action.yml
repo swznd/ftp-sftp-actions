@@ -36,3 +36,6 @@ inputs:
     description: 'Ignore file/folders by glob matching'
     required: false
     default: '.github/**,.gitignore,**/.gitignore'
+runs:
+  using: 'node12'
+  main: 'index.js'
