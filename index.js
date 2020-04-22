@@ -54,7 +54,7 @@ const utils = require('./utils');
     }
   }
   else {
-    parsedActions = actions.split('\n');
+    parsedActions = actions.split('\n').map(action => action.trim().split(' '));
   }
 
   const client = hostURL.protocol === 'ftp:' ? new ftpClient : new sftpClient;
@@ -72,15 +72,26 @@ const utils = require('./utils');
     else if (info.ignored) core.warning(`Upload Ignored: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     else core.error(`Upload Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
   });
+  client.on('move', info => {
+    if (info.status) core.debug(`Moved: ${info.file}`);
+    else core.error(`Move Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+  });
+  client.on('delete', info => {
+    if (info.status) core.debug(`Deleted: ${info.file}`);
+    else core.error(`Delete Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+  });
   client.on('close', info => {
     if (info.status) core.debug('Connection closed');
     else core.error('Close connection Failed');
   });
 
-  client.connect(hostURL.host, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp' ? secure : privateKey);
+  await client.connect(hostURL.host, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? secure : privateKey);
 
-  for (const act in parsedActions) {
-    if (availableActions.indexOf(act[0]) === -1) continue;
+  for (const act of parsedActions) {
+    if (availableActions.indexOf(act[0]) === -1) {
+      core.error(`action ${act[0]} is not exist`);
+      continue;
+    }
 
     if (act.length > 1) {
       if ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
@@ -90,7 +101,7 @@ const utils = require('./utils');
       }
     }
 
-    await client[act[0]].apply(null, act.slice(1));
+    await client[act[0]].apply(client, act.slice(1));
   }
 
   await client.close();
