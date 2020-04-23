@@ -173,8 +173,6 @@ class Ftp extends EventEmitter {
   async _uploadDir(src, dst) {
     try {
       const files = fs.readdirSync(src, { withFileTypes: true });
-      
-      await this.client.mkdir(src, true);
       for (const file of files) {
         if (this.filter.length && micromatch.isMatch(file.name, this.filter)) {
           this.emit('upload', { file: file.name, status: false, ignored: true });
@@ -184,17 +182,9 @@ class Ftp extends EventEmitter {
         const fullPathSrc = path.join(src, file.name);
         const fullPathDst = path.join(dst, file.name);
         if (file.isFile()) {
-          try {
-            await this.client.put(fullPathSrc, fullPathDst);
-            this.emit('upload', { file: fullPathDst, status: true });
-          } catch(e) {
-            console.error(e);
-            this.emit('upload', { file: fullPathDst, status: false });
-            return false;
-          }
+          await this._uploadFile(fullPathSrc, fullPathDst);
         }
         else if (file.isDirectory()) {
-          await this.client.mkdir(fullPathDst, true);
           await this._uploadDir(fullPathSrc, fullPathDst);
         }
       }
