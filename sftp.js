@@ -148,6 +148,17 @@ class Sftp extends EventEmitter {
     }
   }
 
+  async write(fs, dst) {
+    try {
+      await this.client.put(fs, dst, { mode: 0o644 });
+      this.emit('write', { file: dst, status: true });
+    } catch(e) {
+      console.error(e);
+      this.emit('write', { file: dst, status: false });
+      return false;
+    }
+  }
+
   async _uploadFile(src, dst) {
     try {
       const dstPath = path.dirname(dst);
