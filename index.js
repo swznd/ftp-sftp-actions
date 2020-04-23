@@ -63,7 +63,7 @@ const utils = require('./utils');
         }
       }
   
-      if (json.commits && Array.isArray(json.commits)) parsedActions.push(['write', Readable.from(json.commits[json.commits.length - 1].sha), '.revision']);
+      if (json.commits && Array.isArray(json.commits)) parsedActions.push(['write', Readable.from(json.commits[json.commits.length - 1].sha), path.join(remotePath, '.revision')]);
     }
     else {
       parsedActions = actions.split('\n').map(action => action.trim().split(' '));
