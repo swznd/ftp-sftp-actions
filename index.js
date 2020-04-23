@@ -17,8 +17,8 @@ const utils = require('./utils');
     const password = core.getInput('password');
     const privateKey = core.getInput('private_key');
     const secure = core.getInput('secure');
-    const remotePath = utils.trimChar((core.getInput('remotePath') || ''), '/');
-    const localPath = utils.trimChar((core.getInput('localPath') || ''), '/');
+    const remotePath = trimChar((core.getInput('remotePath') || ''), '/').trim();
+    const localPath = trimChar((core.getInput('localPath') || ''), '/').trim();
     const ignore = (core.getInput('ignore') || '').split(',').filter(Boolean);
     const actions = core.getInput('actions', { required: true });
     
@@ -59,7 +59,7 @@ const utils = require('./utils');
       }
       else if (Array.isArray(json)) {
         for(file of json) {
-          parsedActions.push(['upload', file.path, file.path]);
+          parsedActions.push(['upload', file.path, path.join(remotePath, file.path)]);
         }
       }
   
