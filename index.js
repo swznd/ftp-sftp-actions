@@ -72,43 +72,43 @@ const utils = require('./utils');
     client = hostURL.protocol === 'ftp:' ? new ftpClient : new sftpClient;
     client.on('connect', info => {
       if (info.status) {
-        core.debug('Connected!');
+        console.info('Connected!');
         connected = true;
       }
       else core.setFailed('Connecion Failed msg:' + info.msg);
     });
     client.on('download', info => {
-      if (info.status) core.debug(`Downloaded: ${info.file}`);
-      else if (info.ignored) core.warning(`Download Ignored: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
-      else core.error(`Download Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      if (info.status) console.log(`Downloaded: ${info.file}`);
+      else if (info.ignored) console.warn(`Download Ignored: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      else console.error(`Download Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     });
     client.on('upload', info => {
-      if (info.status) core.debug(`Uploaded: ${info.file}`);
-      else if (info.ignored) core.warning(`Upload Ignored: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
-      else core.error(`Upload Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      if (info.status) console.log(`Uploaded: ${info.file}`);
+      else if (info.ignored) console.warn(`Upload Ignored: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      else console.error(`Upload Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     });
     client.on('write', info => {
-      if (info.status) core.debug(`Written: ${info.file}`);
-      else core.error(`Write Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      if (info.status) console.info(`Written: ${info.file}`);
+      else console.error(`Write Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     });
     client.on('move', info => {
-      if (info.status) core.debug(`Moved: ${info.file}`);
-      else core.error(`Move Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      if (info.status) console.info(`Moved: ${info.file}`);
+      else console.error(`Move Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     });
     client.on('delete', info => {
-      if (info.status) core.debug(`Deleted: ${info.file}`);
-      else core.error(`Delete Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+      if (info.status) console.info(`Deleted: ${info.file}`);
+      else console.error(`Delete Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     });
     client.on('close', info => {
-      if (info.status) core.debug('Connection closed');
-      else core.error('Close connection Failed');
+      if (info.status) console.info('Connection closed');
+      else console.error('Close connection Failed');
     });
   
     await client.connect(hostURL.host, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey);
   
     for (const act of parsedActions) {
       if (availableActions.indexOf(act[0]) === -1) {
-        core.error(`action ${act[0]} is not exist`);
+        console.error(`action ${act[0]} is not exist`);
         continue;
       }
   
@@ -116,7 +116,7 @@ const utils = require('./utils');
         if ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
             (ignore.length && micromatch.isMatch(act[1], ignore))) {
           
-          core.warning(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
+          console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
           continue;
         }
       }
