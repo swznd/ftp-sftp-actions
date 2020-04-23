@@ -116,7 +116,7 @@ const utils = require('./utils');
         if ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
             (ignore.length && micromatch.isMatch(act[1], ignore))) {
           
-          core.warning(`${utis.capitalize(act[0])} Ignored: ${act[1]}`);
+          core.warning(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
         }
       }
   
