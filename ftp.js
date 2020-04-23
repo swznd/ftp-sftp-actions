@@ -148,6 +148,7 @@ class Ftp extends EventEmitter {
   }
 
   async _uploadFile(src, dst) { 
+    console.log(`${src} is file`)
     const dstPath = path.dirname(dst);
     const dstPathType = await this.isExists(dstPath);
 
@@ -171,6 +172,7 @@ class Ftp extends EventEmitter {
   }
 
   async _uploadDir(src, dst) {
+    console.log(`${src} is directory`)
     try {  
       const files = fs.readdirSync(src, { withFileTypes: true });
   
