@@ -2,7 +2,6 @@ const core = require('@actions/core');
 const url = require('url');
 const path = require('path');
 const micromatch = require('micromatch');
-const { Readable } = require('stream');
 const ftpClient = require('./ftp');
 const sftpClient = require('./sftp');
 const utils = require('./utils');

@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 const ftpClient = require("promise-ftp");
 const path = require('path');
 const fs = require('fs');
+const { Readable } = require('stream');
 
 class Ftp extends EventEmitter {
   constructor() {
@@ -136,9 +137,14 @@ class Ftp extends EventEmitter {
     }
   }
 
-  async write(fs, dst) {
+  async write(content, dst) {
     try {
-      await this.client.put(fs, dst, { mode: 0o644 });
+      if (typeof content !== 'string') {
+        this.emit('write', { file: dst, status: false, msg: 'content is not string' });
+        return false;
+      }
+
+      await this.client.put(Readable.from(content), dst);
       this.emit('write', { file: dst, status: true });
     } catch(e) {
       console.error(e);

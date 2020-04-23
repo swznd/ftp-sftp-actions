@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const micromatch = require('micromatch');
 const fse = require('fs-extra');
+const { Readable } = require('stream');
 
 class Sftp extends EventEmitter {
   constructor() {
@@ -148,9 +149,14 @@ class Sftp extends EventEmitter {
     }
   }
 
-  async write(fs, dst) {
+  async write(content, dst) {
     try {
-      await this.client.put(fs, dst, { mode: 0o644 });
+      if (typeof content !== 'string') {
+        this.emit('write', { file: dst, status: false, msg: 'content is not string' });
+        return false;
+      }
+
+      await this.client.put(Readable.from(content), dst, { mode: 0o644 });
       this.emit('write', { file: dst, status: true });
     } catch(e) {
       console.error(e);
