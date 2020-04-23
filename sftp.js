@@ -27,7 +27,7 @@ class Sftp extends EventEmitter {
       });
       this.emit('connect', { status: true });
     } catch (e) {
-      this.emit('connect', { status: false });
+      this.emit('connect', { status: false, msg: e.message });
     }
 
     this.client.on('upload', info => {

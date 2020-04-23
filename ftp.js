@@ -21,7 +21,7 @@ class Ftp extends EventEmitter {
       });
       this.emit('connect', { status: true });
     } catch(e) {
-      this.emit('connect', { status: false });
+      this.emit('connect', { status: false, msg: e.message });
     }
   }
 

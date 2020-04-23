@@ -75,7 +75,7 @@ const utils = require('./utils');
         core.debug('Connected!');
         connected = true;
       }
-      else core.setFailed('Connecion Failed');
+      else core.setFailed('Connecion Failed msg:' + info.msg);
     });
     client.on('download', info => {
       if (info.status) core.debug(`Downloaded: ${info.file}`);
