@@ -182,20 +182,24 @@ class Ftp extends EventEmitter {
           continue;
         }
   
-        const fullPath = path.join(src, file.name);
+        const fullPathSrc = path.join(src, file.name);
+        const fullPathDst = path.join(dst, file.name);
         if (file.isFile()) {
+          console.log('file : ' + fullPathSrc);
           try {
-            await this.client.put(fullPath, path.join(dst, file.name));
-            this.emit('upload', { file: `${src}/file.name`, status: true });
+            await this.client.put(fullPathSrc, fullPathDst);
+            this.emit('upload', { file: fullPathDst, status: true });
           } catch(e) {
-            await this.client.put(fullPath, path.join(dst, file.name));
-            this.emit('upload', { file: `${src}/file.name`, status: false });
+            console.error(e);
+            await this.client.put(fullPathSrc, fullPathDst);
+            this.emit('upload', { file: fullPathDst, status: false });
             return false;
           }
         }
         else if (file.isDirectory()) {
-          await this.client.mkdir(path.join(dst, file.name), true);
-          await this._uploadDir(path.join(src, file.name), path.join(dst, file.name));
+          console.log('directory : ' + fullPathSrc);
+          await this.client.mkdir(fullPathDst, true);
+          await this._uploadDir(fullPathSrc, fullPathDst);
         }
       }
 
