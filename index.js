@@ -117,6 +117,7 @@ const utils = require('./utils');
             (ignore.length && micromatch.isMatch(act[1], ignore))) {
           
           core.warning(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
+          continue;
         }
       }
   
