@@ -20,7 +20,7 @@ const utils = require('./utils');
     const remotePath = (core.getInput('remotePath').trim() || './');
     const localPath = (utils.trimChar(core.getInput('localPath'), '/').trim() || '');
     const ignore = (core.getInput('ignore') || '').split(',').filter(Boolean);
-    const actions = core.getInput('actions', { required: true });
+    const actions = core.getInput('actions', { required: true }).split('\n').filter(Boolean);
     
     const availableActions = ['download', 'upload', 'write', 'move', 'delete'];
     let parsedActions = [];
@@ -42,32 +42,32 @@ const utils = require('./utils');
       core.setFailed(`${hostURL.protocol} is not supported`);
     }
   
-    if (utils.isJson(actions)) {
-      const json = JSON.parse(actions);
-      if (json.files && Array.isArray(json.files)) {
-        for(file of json.files) {
-          if (file.status == 'renamed') {
-            parsedActions.push([file.changes ? 'upload' : 'rename', file.previous_filename, path.join(remotePath, file.filename)]);
+    actions.forEach(action => {
+      if (utils.isJson(action)) {
+        const json = JSON.parse(action);
+        if (json.files && Array.isArray(json.files)) {
+          for(file of json.files) {
+            if (file.status == 'renamed') {
+              parsedActions.push([file.changes ? 'upload' : 'rename', file.previous_filename, path.join(remotePath, file.filename)]);
+            }
+            else if (file.status == 'added' || file.status == 'modified') {
+              parsedActions.push(['upload', file.filename, path.join(remotePath, file.filename)]);
+            }
+            else if (file.status == 'removed') {
+              parsedActions.push(['remove', path.join(remotePath, file.filename)]);
+            }
           }
-          else if (file.status == 'added' || file.status == 'modified') {
-            parsedActions.push(['upload', file.filename, path.join(remotePath, file.filename)]);
-          }
-          else if (file.status == 'removed') {
-            parsedActions.push(['remove', path.join(remotePath, file.filename)]);
+        }
+        else if (Array.isArray(json)) {
+          for(file of json) {
+            parsedActions.push(['upload', file.path, path.join(remotePath, file.path)]);
           }
         }
       }
-      else if (Array.isArray(json)) {
-        for(file of json) {
-          parsedActions.push(['upload', file.path, path.join(remotePath, file.path)]);
-        }
+      else {
+        parsedActions.push(...action.trim().split(' '));
       }
-  
-      if (json.commits && Array.isArray(json.commits)) parsedActions.push(['write', Readable.from(json.commits[json.commits.length - 1].sha), path.join(remotePath, '.revision')]);
-    }
-    else {
-      parsedActions = actions.split('\n').map(action => action.trim().split(' '));
-    }
+    });
   
     client = hostURL.protocol === 'ftp:' ? new ftpClient : new sftpClient;
     client.on('connect', info => {
