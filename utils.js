@@ -1,9 +1,9 @@
 // https://stackoverflow.com/a/32278428
 function isJson(str) {
-    try {
-      return JSON.parse(str) && !!str;
+  try {
+    return JSON.parse(str) && !!str;
   } catch (e) {
-      return false;
+    return false;
   }
 }
 
