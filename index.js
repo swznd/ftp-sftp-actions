@@ -65,7 +65,7 @@ const utils = require('./utils');
         }
       }
       else {
-        parsedActions.push(...action.trim().split(' '));
+        parsedActions.push(action.trim().split(' '));
       }
     });
   
