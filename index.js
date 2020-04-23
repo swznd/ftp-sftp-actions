@@ -2,6 +2,7 @@ const core = require('@actions/core');
 const url = require('url');
 const path = require('path');
 const micromatch = require('micromatch');
+const { Readable } = require('stream');
 const ftpClient = require('./ftp');
 const sftpClient = require('./sftp');
 const utils = require('./utils');
@@ -17,7 +18,7 @@ const utils = require('./utils');
   const ignore = (core.getInput('ignore') || '').split(',').filter(Boolean);
   const actions = core.getInput('actions', { required: true });
   
-  const availableActions = ['download', 'upload', 'move', 'delete'];
+  const availableActions = ['download', 'upload', 'write', 'move', 'delete'];
   let parsedActions = [];
   
   const hostURL = url.parse(host);
@@ -39,7 +40,7 @@ const utils = require('./utils');
 
   if (utils.isJson(actions)) {
     const json = JSON.parse(actions);
-    if (json.files && utils.isObject(json.files)) {
+    if (json.files && Array.isArray(json.files)) {
       for(file of json.files) {
         if (file.status == 'renamed') {
           parsedActions.push([file.changes ? 'upload' : 'rename', file.previous_filename, path.join(remotePath, file.filename)]);
@@ -51,6 +52,8 @@ const utils = require('./utils');
           parsedActions.push(['remove', path.join(remotePath, file.filename)]);
         }
       }
+
+      if (json.commits && Array.isArray(json.commits)) parsedActions.push(['write', Readable.from(json.commits[json.commits.length - 1].sha), '.revision']);
     }
   }
   else {
@@ -71,6 +74,10 @@ const utils = require('./utils');
     if (info.status) core.debug(`Uploaded: ${info.file}`);
     else if (info.ignored) core.warning(`Upload Ignored: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
     else core.error(`Upload Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+  });
+  client.on('write', info => {
+    if (info.status) core.debug(`Written: ${info.file}`);
+    else core.error(`Write Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
   });
   client.on('move', info => {
     if (info.status) core.debug(`Moved: ${info.file}`);
