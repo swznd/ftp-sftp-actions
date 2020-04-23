@@ -104,7 +104,7 @@ const utils = require('./utils');
       else core.error('Close connection Failed');
     });
   
-    await client.connect(hostURL.host, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? secure : privateKey);
+    await client.connect(hostURL.host, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey);
   
     for (const act of parsedActions) {
       if (availableActions.indexOf(act[0]) === -1) {
