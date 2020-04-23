@@ -251,7 +251,7 @@ class Ftp extends EventEmitter {
     const fileName = path.basename(file);
 
     try {
-      const lists = await this.client.list(filePath);
+      const lists = await this.client.list(`-a ${filePath}`);
       for(let list of lists) {
         if (list.name == fileName) {
           return list.type;
