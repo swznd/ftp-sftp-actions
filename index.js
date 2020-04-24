@@ -107,7 +107,7 @@ const utils = require('./utils');
   
     for (const act of parsedActions) {
       if (availableActions.indexOf(act[0]) === -1) {
-        console.error(`action ${act[0]} is not exist`);
+        core.setFailed(`action ${act[0]} is not exist`);
         continue;
       }
   
