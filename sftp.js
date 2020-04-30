@@ -250,6 +250,27 @@ class Sftp extends EventEmitter {
     }
   }
 
+  async clean(dst) {
+    try {
+      const lists = await this.client.list(dst);
+      for(let list of lists) {
+        if (list.type == 'd') {
+          await this.client.rmdir(list.name, true);
+        }
+        else {
+          await this.client.delete(list.name);
+        }
+
+        this.emit('delete', { file: list.name, status: true, type: list.type });
+      }
+    } catch(e) {
+      console.error(e);
+      this.emit('clean', { file: dst, status: false });
+      return false;      
+    }
+  }
+
+
   async move(src, dst) {
     try {
       const checkSrc = await this.client.exists(src);

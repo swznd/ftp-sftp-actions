@@ -21,7 +21,7 @@ const utils = require('./utils');
     const ignore = (core.getInput('ignore') || '').split(',').filter(Boolean);
     const actions = core.getInput('actions', { required: true }).split('\n').filter(Boolean);
     
-    const availableActions = ['download', 'upload', 'write', 'move', 'delete'];
+    const availableActions = ['download', 'upload', 'write', 'move', 'delete', 'clean'];
     let parsedActions = [];
     
     const hostURL = url.parse(host);
