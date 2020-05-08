@@ -53,7 +53,7 @@ const utils = require('./utils');
               parsedActions.push(['upload', file.filename, path.join(remotePath, file.filename)]);
             }
             else if (file.status == 'removed') {
-              parsedActions.push(['remove', path.join(remotePath, file.filename)]);
+              parsedActions.push(['delete', path.join(remotePath, file.filename)]);
             }
           }
         }
