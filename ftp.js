@@ -158,11 +158,7 @@ class Ftp extends EventEmitter {
     const dstPathType = await this.isExists(dstPath);
 
     try {
-      if (dstPathType != 'd') {
-        if (dstPathType) {
-          await this.client.delete(dstPathType);
-        }
-  
+      if ( ! dstPathType) {
         await this.client.mkdir(dstPath, true);
       }
       

@@ -170,11 +170,7 @@ class Sftp extends EventEmitter {
       const dstPath = path.dirname(dst);
       const dstPathType = await this.client.exists(dstPath);
   
-      if (dstPathType != 'd') {
-        if (dstPathType) {
-          await this.client.delete(dstPathType);
-        }
-  
+      if ( ! dstPathType) {
         await this.client.mkdir(dstPath, true);
       }
       
