@@ -251,10 +251,10 @@ class Sftp extends EventEmitter {
       const lists = await this.client.list(dst);
       for(let list of lists) {
         if (list.type == 'd') {
-          await this.client.rmdir(list.name, true);
+          await this.client.rmdir(path.join(dst, list.name), true);
         }
         else {
-          await this.client.delete(list.name);
+          await this.client.delete(path.join(dst, list.name));
         }
 
         this.emit('delete', { file: list.name, status: true, type: list.type });
