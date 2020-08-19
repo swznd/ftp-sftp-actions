@@ -102,6 +102,10 @@ const utils = require('./utils');
       if (info.status) console.info('Connection closed');
       else console.error('Close connection Failed');
     });
+    
+    if (ignore.length) {
+      client.setFilter(ignore);
+    }
   
     await client.connect(hostURL.hostname, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey);
   

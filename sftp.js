@@ -197,8 +197,8 @@ class Sftp extends EventEmitter {
       let tempSrc = '';
   
       if (this.filter.length) {
-        tempSrc = '.tmp-sftp';
-        fse.copySync(path.join(src, file), path.join(src, tempSrc), (src, dst) => {
+        tempSrc = path.join('..', '.tmp-sftp');
+        fse.copySync(src, path.join(src, tempSrc), (src, dst) => {
           if (micromatch.isMatch(src, this.filter)) {
             this.emit('upload', { file: src, status: false, ignored: true });
             return false;
