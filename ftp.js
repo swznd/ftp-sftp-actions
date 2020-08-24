@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 const ftpClient = require("promise-ftp");
 const path = require('path');
 const fs = require('fs');
+const micromatch = require('micromatch');
 const { Readable } = require('stream');
 
 class Ftp extends EventEmitter {
