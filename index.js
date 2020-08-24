@@ -46,20 +46,32 @@ const utils = require('./utils');
         const json = JSON.parse(action);
         if (json.files && Array.isArray(json.files)) {
           for(file of json.files) {
+            let remoteFile = file.filename;
+
+            if (['', './', '.'].indexOf(localPath) === -1 && file.filename.startsWith(localPath)) {
+              remoteFile = file.filename.substr(localPath.length);
+            }
+
             if (file.status == 'renamed') {
-              parsedActions.push([file.changes ? 'upload' : 'rename', file.previous_filename, path.join(remotePath, file.filename)]);
+              parsedActions.push([file.changes ? 'upload' : 'rename', file.previous_filename, path.join(remotePath, remoteFile)]);
             }
             else if (file.status == 'added' || file.status == 'modified') {
-              parsedActions.push(['upload', file.filename, path.join(remotePath, file.filename)]);
+              parsedActions.push(['upload', file.filename, path.join(remotePath, remoteFile)]);
             }
             else if (file.status == 'removed') {
-              parsedActions.push(['delete', path.join(remotePath, file.filename)]);
+              parsedActions.push(['delete', path.join(remotePath, remoteFile)]);
             }
           }
         }
         else if (Array.isArray(json)) {
           for(file of json) {
-            parsedActions.push(['upload', file.path, path.join(remotePath, file.path)]);
+            let remoteFile = file.path;
+
+            if (['', './', '.'].indexOf(localPath) === -1 && file.path.startsWith(localPath)) {
+              remoteFile = file.path.substr(localPath.length);
+            }
+
+            parsedActions.push(['upload', file.path, path.join(remotePath, remoteFile)]);
           }
         }
       }
@@ -116,16 +128,12 @@ const utils = require('./utils');
       }
   
       if (act.length > 1) {
-        if (act[0].toLowerCase() !== 'write') {
-          if ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
-              (ignore.length && micromatch.isMatch(act[1], ignore))) {
-            
-            console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
-            continue;
-          }
-          else if (['', './', '.'].indexOf(localPath) === -1 && act[1].startsWith(localPath)) {
-            act[1] = act[1].substr(localPath.length)
-          }
+        if (act[0].toLowerCase() !== 'write' && 
+            ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
+            (ignore.length && micromatch.isMatch(act[1], ignore)))) {
+          
+          console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
+          continue;
         }
       }
   
