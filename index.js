@@ -116,8 +116,9 @@ const utils = require('./utils');
       }
   
       if (act.length > 1) {
-        if ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
-            (ignore.length && micromatch.isMatch(act[1], ignore))) {
+        if (act[0].toLowerCase() !== 'write' && 
+            ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
+            (ignore.length && micromatch.isMatch(act[1], ignore)))) {
           
           console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
           continue;
