@@ -123,8 +123,13 @@ const utils = require('./utils');
   
     for (const act of parsedActions) {
       if (availableActions.indexOf(act[0]) === -1) {
-        core.setFailed(`action ${act[0]} is not exist`);
-        continue;
+        core.setFailed(`action "${act[0]}" is not exist`);
+        break;
+      }
+
+      if (typeof client[act[0]] === 'undefined') {
+        core.setFailed(`action "${act[0]}" is undefined`);
+        break;
       }
   
       if (act.length > 1) {
@@ -136,7 +141,7 @@ const utils = require('./utils');
           continue;
         }
       }
-  
+
       await client[act[0]].apply(client, act.slice(1));
     }
   
