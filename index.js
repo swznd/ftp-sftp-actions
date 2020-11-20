@@ -53,7 +53,7 @@ const utils = require('./utils');
             }
 
             if (file.status == 'renamed') {
-              parsedActions.push([file.changes ? 'upload' : 'rename', file.previous_filename, path.join(remotePath, remoteFile)]);
+              parsedActions.push([file.changes ? 'upload' : 'move', file.previous_filename, path.join(remotePath, remoteFile)]);
             }
             else if (file.status == 'added' || file.status == 'modified') {
               parsedActions.push(['upload', file.filename, path.join(remotePath, remoteFile)]);
