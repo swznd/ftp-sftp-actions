@@ -1,6 +1,7 @@
 const core = require('@actions/core');
 const url = require('url');
 const path = require('path');
+const fs = require('fs');
 const micromatch = require('micromatch');
 const ftpClient = require('./ftp');
 const sftpClient = require('./sftp');
@@ -40,46 +41,64 @@ const utils = require('./utils');
     if (['ftp:', 'sftp:'].indexOf(hostURL.protocol) === -1) {
       core.setFailed(`${hostURL.protocol} is not supported`);
     }
+
+    const parseJsonAction = (action) => {
+      const json = JSON.parse(action);
+      if (json.files && Array.isArray(json.files)) {
+        for(file of json.files) {
+          let remoteFile = file.filename;
+
+          if (['', './', '.'].indexOf(localPath) === -1 && file.filename.startsWith(localPath)) {
+            remoteFile = file.filename.substr(localPath.length);
+          }
+
+          if (file.status == 'renamed') {
+            parsedActions.push([file.changes ? 'upload' : 'move', path.join(remotePath, file.previous_filename), path.join(remotePath, remoteFile)]);
+          }
+          else if (file.status == 'added' || file.status == 'modified') {
+            parsedActions.push(['upload', file.filename, path.join(remotePath, remoteFile)]);
+          }
+          else if (file.status == 'removed') {
+            parsedActions.push(['delete', path.join(remotePath, remoteFile)]);
+          }
+        }
+      }
+      else if (Array.isArray(json)) {
+        for(file of json) {
+          let remoteFile = file.path;
+
+          if (['', './', '.'].indexOf(localPath) === -1 && file.path.startsWith(localPath)) {
+            remoteFile = file.path.substr(localPath.length);
+          }
+
+          parsedActions.push(['upload', file.path, path.join(remotePath, remoteFile)]);
+        }
+      }
+    }
   
     actions.forEach(action => {
       if (utils.isJson(action)) {
-        const json = JSON.parse(action);
-        if (json.files && Array.isArray(json.files)) {
-          for(file of json.files) {
-            let remoteFile = file.filename;
-
-            if (['', './', '.'].indexOf(localPath) === -1 && file.filename.startsWith(localPath)) {
-              remoteFile = file.filename.substr(localPath.length);
-            }
-
-            if (file.status == 'renamed') {
-              parsedActions.push([file.changes ? 'upload' : 'move', path.join(remotePath, file.previous_filename), path.join(remotePath, remoteFile)]);
-            }
-            else if (file.status == 'added' || file.status == 'modified') {
-              parsedActions.push(['upload', file.filename, path.join(remotePath, remoteFile)]);
-            }
-            else if (file.status == 'removed') {
-              parsedActions.push(['delete', path.join(remotePath, remoteFile)]);
-            }
-          }
+        parseJsonAction(action);
+      }
+      else if (action.startsWith('file://')) {
+        const fileName = action.replace('file://', '');
+        if (!fs.existsSync(fileName)) {
+          console.error('Action skipped. File ' + fileName + ' not exists');
         }
-        else if (Array.isArray(json)) {
-          for(file of json) {
-            let remoteFile = file.path;
 
-            if (['', './', '.'].indexOf(localPath) === -1 && file.path.startsWith(localPath)) {
-              remoteFile = file.path.substr(localPath.length);
-            }
+        const actionData = fs.readFileSync(fileName, 'utf-8');
 
-            parsedActions.push(['upload', file.path, path.join(remotePath, remoteFile)]);
-          }
+        if (!utils.isJson(actionData)) {
+          console.error('Action skipped. File ' + fileName + ' not contains json');
         }
+
+        parseJsonAction(actionData);
       }
       else {
         parsedActions.push(action.trim().split(' '));
       }
     });
-  
+    
     client = hostURL.protocol === 'ftp:' ? new ftpClient : new sftpClient;
     client.on('connect', info => {
       if (info.status) {
