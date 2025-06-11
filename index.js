@@ -21,6 +21,7 @@ const utils = require('./utils');
     const localPath = (utils.trimChar(core.getInput('localPath'), '/').trim() || '');
     const ignore = (core.getInput('ignore') || '').split(',').filter(Boolean);
     const actions = core.getInput('actions', { required: true }).split('\n').filter(Boolean);
+    const debug = core.getInput('debug') === 'true'
     
     const availableActions = ['download', 'upload', 'write', 'move', 'delete', 'clean', 'rename'];
     let parsedActions = [];
@@ -138,7 +139,7 @@ const utils = require('./utils');
       client.setFilter(ignore);
     }
   
-    await client.connect(hostURL.hostname, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey);
+    await client.connect(hostURL.hostname, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey, debug);
   
     for (const act of parsedActions) {
       if (availableActions.indexOf(act[0]) === -1) {

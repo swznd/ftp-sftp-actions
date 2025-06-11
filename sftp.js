@@ -17,15 +17,23 @@ class Sftp extends EventEmitter {
     this.filter = filter;
   }
 
-  async connect(host, port, user, password, privateKey) {
+  async connect(host, port, user, password, privateKey, debug) {
     try {
-      await this.client.connect({
+      const config = {
         host: host,
         username: user,
         password: password,
         port: port || 22,
         privateKey: privateKey
-      });
+      }
+
+      if (debug) {
+        config.debug = msg => {
+          console.error(msg);
+        };
+      }
+      
+      await this.client.connect(config);
       this.emit('connect', { status: true });
     } catch (e) {
       this.emit('connect', { status: false, msg: e.message });
