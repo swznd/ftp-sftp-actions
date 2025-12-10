@@ -12,6 +12,7 @@ class Sftp extends EventEmitter {
     super()
     this.client = new sftpClient;
     this.sshClient = null;
+    this.sshConnected = false;
     this.filter = [];
   }
 
@@ -298,40 +299,52 @@ class Sftp extends EventEmitter {
   }
 
   exec(command) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        this.sshClient = new Client();
+        if (! this.sshConnected) {
+          await this._sshConnect();
+        }
 
-        this.sshClient.on('ready', () => {
-          this.sshClient.exec(command, (err, stream) => {
-            if (err) {
-              this.emit('exec', { status: false, command, msg: err.message });
-              return;
-            }
+        this.sshClient.exec(command, (err, stream) => {
+          if (err) {
+            this.emit('exec', { status: false, command, msg: err.message });
+            return;
+          }
 
-            let stdout = '';
-            let stderr = '';
+          let stdout = '';
+          let stderr = '';
 
-            stream.on('close', (code, signal) => {
-              const status = code === 0;
-              this.emit('exec', { status, command, code, signal, stdout, stderr });
-              resolve();
-            });
-
-            stream.on('data', (data) => {
-              stdout += data.toString();
-            });
-
-            stream.stderr.on('data', (data) => {
-              stderr += data.toString();
-            });
+          stream.on('close', (code, signal) => {
+            const status = code === 0;
+            this.emit('exec', { status, command, code, signal, stdout, stderr });
+            resolve();
           });
-        }).connect(this.config);
+
+          stream.on('data', (data) => {
+            stdout += data.toString();
+          });
+
+          stream.stderr.on('data', (data) => {
+            stderr += data.toString();
+          });
+        });
       } catch (e) {
         console.error(e);
         this.emit('exec', { status: false, command, msg: e.message });
         resolve();
       }
+    });
+  }
+
+  async _sshConnect() {
+    return new Promise((resolve, reject) => {
+      this.sshClient = new Client();
+      this.sshClient.on('ready', () => {
+        this.sshConnected = true;
+        resolve();
+      });
+      this.sshClient.on('error', reject);
+      this.sshClient.connect(this.config);
     });
   }
 }
