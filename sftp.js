@@ -5,11 +5,13 @@ const fs = require('fs');
 const micromatch = require('micromatch');
 const fse = require('fs-extra');
 const { Readable } = require('stream');
+const { Client } = require('ssh2');
 
 class Sftp extends EventEmitter {
   constructor() {
     super()
     this.client = new sftpClient;
+    this.config = {};
     this.filter = [];
   }
 
@@ -19,7 +21,7 @@ class Sftp extends EventEmitter {
 
   async connect(host, port, user, password, privateKey, debug) {
     try {
-      const config = {
+      this.config = {
         host: host,
         username: user,
         password: password,
@@ -28,12 +30,12 @@ class Sftp extends EventEmitter {
       }
 
       if (debug) {
-        config.debug = msg => {
+        this.config.debug = msg => {
           console.error(msg);
         };
       }
       
-      await this.client.connect(config);
+      await this.client.connect(this.config);
       this.emit('connect', { status: true });
     } catch (e) {
       this.emit('connect', { status: false, msg: e.message });
@@ -294,7 +296,7 @@ class Sftp extends EventEmitter {
 
   async exec(command) {
     try {
-      const sshClient = this.client.client;
+      const sshClient = new Client(this.config);
 
       sshClient.exec(command, (err, stream) => {
         if (err) {
