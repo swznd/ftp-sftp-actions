@@ -274,7 +274,6 @@ class Sftp extends EventEmitter {
     }
   }
 
-
   async move(src, dst) {
     try {
       const checkSrc = await this.client.exists(src);
@@ -289,6 +288,39 @@ class Sftp extends EventEmitter {
     } catch(e) {
       console.error(e);
       this.emit('move', { file: dst, status: false });
+      return false;
+    }
+  }
+
+  async exec(command) {
+    try {
+      const sshClient = this.client.client;
+
+      sshClient.exec(command, (err, stream) => {
+        if (err) {
+          this.emit('exec', { status: false, command, msg: err.message });
+          return;
+        }
+
+        let stdout = '';
+        let stderr = '';
+
+        stream.on('close', (code, signal) => {
+          const status = code === 0;
+          this.emit('exec', { status, command, code, signal, stdout, stderr });
+        });
+
+        stream.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        stream.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+      });
+    } catch (e) {
+      console.error(e);
+      this.emit('exec', { status: false, command, msg: e.message });
       return false;
     }
   }

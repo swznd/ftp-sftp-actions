@@ -43,6 +43,10 @@ const utils = require('./utils');
       core.setFailed(`${hostURL.protocol} is not supported`);
     }
 
+    if (hostURL.protocol == 'sftp:') {
+      availableActions.push('exec');
+    }
+
     const parseJsonAction = (action) => {
       const json = JSON.parse(action);
       if (json.files && Array.isArray(json.files)) {
@@ -129,6 +133,15 @@ const utils = require('./utils');
     client.on('delete', info => {
       if (info.status) console.info(`Deleted: ${info.file}`);
       else console.error(`Delete Failed: ${info.file} ${info.msg ? `(msg: ${info.msg})` : ''}`);
+    });
+    client.on('exec', info => {
+      if (info.status) {
+        console.log(`Command executed: ${info. command}`);
+        if (info.stdout) console.log(`stdout: ${info. stdout}`);
+      } else {
+        console.error(`Command failed: ${info.command} ${info.msg ?  `(msg: ${info.msg})` : ''}`);
+        if (info.stderr) console.error(`stderr: ${info. stderr}`);
+      }
     });
     client.on('close', info => {
       if (info.status) console.info('Connection closed');
