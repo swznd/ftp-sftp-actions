@@ -11,7 +11,7 @@ class Sftp extends EventEmitter {
   constructor() {
     super()
     this.client = new sftpClient;
-    this.config = {};
+    this.sshClient = null;
     this.filter = [];
   }
 
@@ -53,6 +53,9 @@ class Sftp extends EventEmitter {
   async close() {
     try {
       await this.client.end();
+      if (this.sshClient) {
+        this.sshClient.end();
+      }
       this.emit('close', { status: true });
     } catch(e) {
       this.emit('close', { status: false });
@@ -294,39 +297,41 @@ class Sftp extends EventEmitter {
     }
   }
 
-  async exec(command) {
-    try {
-      const sshClient = new Client();
+  exec(command) {
+    return new Promise((resolve, reject) => {
+      try {
+        this.sshClient = new Client();
 
-      sshClient.on('ready', () => {
-        sshClient.exec(command, (err, stream) => {
-          if (err) {
-            this.emit('exec', { status: false, command, msg: err.message });
-            return;
-          }
+        this.sshClient.on('ready', () => {
+          this.sshClient.exec(command, (err, stream) => {
+            if (err) {
+              this.emit('exec', { status: false, command, msg: err.message });
+              return;
+            }
 
-          let stdout = '';
-          let stderr = '';
+            let stdout = '';
+            let stderr = '';
 
-          stream.on('close', (code, signal) => {
-            const status = code === 0;
-            this.emit('exec', { status, command, code, signal, stdout, stderr });
+            stream.on('close', (code, signal) => {
+              const status = code === 0;
+              this.emit('exec', { status, command, code, signal, stdout, stderr });
+              resolve();
+            });
+
+            stream.on('data', (data) => {
+              stdout += data.toString();
+            });
+
+            stream.stderr.on('data', (data) => {
+              stderr += data.toString();
+            });
           });
-
-          stream.on('data', (data) => {
-            stdout += data.toString();
-          });
-
-          stream.stderr.on('data', (data) => {
-            stderr += data.toString();
-          });
-        });
-      }).connect(this.config);
-    } catch (e) {
-      console.error(e);
-      this.emit('exec', { status: false, command, msg: e.message });
-      return false;
-    }
+        }).connect(this.config);
+      } catch (e) {
+        console.error(e);
+        this.emit('exec', { status: false, command, msg: e.message });
+      }
+    });
   }
 }
 
