@@ -100,7 +100,7 @@ const utils = require('./utils');
         parseJsonAction(actionData);
       }
       else {
-        parsedActions.push(action.trim().split(' '));
+        parsedActions.push(utils.parseAction(action.trim()));
       }
     });
     
