@@ -296,30 +296,32 @@ class Sftp extends EventEmitter {
 
   async exec(command) {
     try {
-      const sshClient = new Client(this.config);
+      const sshClient = new Client();
 
-      sshClient.exec(command, (err, stream) => {
-        if (err) {
-          this.emit('exec', { status: false, command, msg: err.message });
-          return;
-        }
+      sshClient.on('ready', () => {
+        sshClient.exec(command, (err, stream) => {
+          if (err) {
+            this.emit('exec', { status: false, command, msg: err.message });
+            return;
+          }
 
-        let stdout = '';
-        let stderr = '';
+          let stdout = '';
+          let stderr = '';
 
-        stream.on('close', (code, signal) => {
-          const status = code === 0;
-          this.emit('exec', { status, command, code, signal, stdout, stderr });
+          stream.on('close', (code, signal) => {
+            const status = code === 0;
+            this.emit('exec', { status, command, code, signal, stdout, stderr });
+          });
+
+          stream.on('data', (data) => {
+            stdout += data.toString();
+          });
+
+          stream.stderr.on('data', (data) => {
+            stderr += data.toString();
+          });
         });
-
-        stream.on('data', (data) => {
-          stdout += data.toString();
-        });
-
-        stream.stderr.on('data', (data) => {
-          stderr += data.toString();
-        });
-      });
+      }).connect(this.config);
     } catch (e) {
       console.error(e);
       this.emit('exec', { status: false, command, msg: e.message });
