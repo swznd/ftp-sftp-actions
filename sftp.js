@@ -330,6 +330,7 @@ class Sftp extends EventEmitter {
       } catch (e) {
         console.error(e);
         this.emit('exec', { status: false, command, msg: e.message });
+        resolve();
       }
     });
   }
