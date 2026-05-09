@@ -115,9 +115,11 @@ class Sftp extends EventEmitter {
       await this.client.downloadDir(src, path.join(dst, tempSrc));
 
       if (tempSrc) {
-        fse.copySync(path.join(dst, tempSrc), dst, (src, dst) => {
-          if (micromatch.isMatch(src, this.filter)) {
-            this.emit('download', { file: src, status: false, ignored: true });
+        const tmpRoot = path.resolve(path.join(dst, tempSrc));
+        fse.copySync(path.join(dst, tempSrc), dst, (s, d) => {
+          const relPath = path.relative(tmpRoot, path.resolve(s));
+          if (relPath && micromatch.isMatch(relPath, this.filter)) {
+            this.emit('download', { file: relPath, status: false, ignored: true });
             return false;
           }
 
@@ -209,12 +211,14 @@ class Sftp extends EventEmitter {
       }
   
       let tempSrc = '';
-  
+
       if (this.filter.length) {
         tempSrc = path.join('..', '.tmp-sftp');
-        fse.copySync(src, path.join(src, tempSrc), (src, dst) => {
-          if (micromatch.isMatch(src, this.filter)) {
-            this.emit('upload', { file: src, status: false, ignored: true });
+        const srcRoot = path.resolve(src);
+        fse.copySync(src, path.join(src, tempSrc), (s, d) => {
+          const relPath = path.relative(srcRoot, path.resolve(s));
+          if (relPath && micromatch.isMatch(relPath, this.filter)) {
+            this.emit('upload', { file: relPath, status: false, ignored: true });
             return false;
           }
 

@@ -76,7 +76,9 @@ class Ftp extends EventEmitter {
     }
   }
 
-  async _downloadDir(src, dst) {
+  async _downloadDir(src, dst, root) {
+    if (root === undefined) root = src;
+
     try {
       if ( ! fs.existsSync(dst)) {
         fs.mkdirSync(dst, { recursive: true, mode: 0o755 });
@@ -85,7 +87,7 @@ class Ftp extends EventEmitter {
         this.emit('download', { file: src, status: false, msg: 'destination is exist and not a directory' });
       }
 
-      await this._downloadFromDir(src, dst);
+      await this._downloadFromDir(src, dst, root);
       return true;
     }
     catch {
@@ -94,17 +96,20 @@ class Ftp extends EventEmitter {
     }
   }
 
-  async _downloadFromDir(src, dst) {
+  async _downloadFromDir(src, dst, root) {
     const lists = await this.client.list(src);
     for(const list of lists) {
-      if (this.filter.length && micromatch.isMatch(list.name, this.filter)) {
-        this.emit('download', { file: path.join(src, list.name), status: false, ignored: true });
+      const fullSrc = path.join(src, list.name);
+      const relPath = path.relative(root, fullSrc);
+
+      if (this.filter.length && micromatch.isMatch(relPath, this.filter)) {
+        this.emit('download', { file: relPath, status: false, ignored: true });
         continue;
       }
 
-      if (list.type == 'd') await this._downloadDir(path.join(src, list.name), path.join(dst, list.name));
+      if (list.type == 'd') await this._downloadDir(fullSrc, path.join(dst, list.name), root);
       else {
-        await this._downloadFile(path.join(src, list.name), path.join(dst, list.name));
+        await this._downloadFile(fullSrc, path.join(dst, list.name));
       }
     }
   }
@@ -173,22 +178,26 @@ class Ftp extends EventEmitter {
     }
   }
 
-  async _uploadDir(src, dst) {
+  async _uploadDir(src, dst, root) {
+    if (root === undefined) root = src;
+
     try {
       const files = fs.readdirSync(src, { withFileTypes: true });
       for (const file of files) {
-        if (this.filter.length && micromatch.isMatch(file.name, this.filter)) {
-          this.emit('upload', { file: file.name, status: false, ignored: true });
-          continue;
-        }
-        
         const fullPathSrc = path.join(src, file.name);
         const fullPathDst = path.join(dst, file.name);
+        const relPath = path.relative(root, fullPathSrc);
+
+        if (this.filter.length && micromatch.isMatch(relPath, this.filter)) {
+          this.emit('upload', { file: relPath, status: false, ignored: true });
+          continue;
+        }
+
         if (file.isFile()) {
           await this._uploadFile(fullPathSrc, fullPathDst);
         }
         else if (file.isDirectory()) {
-          await this._uploadDir(fullPathSrc, fullPathDst);
+          await this._uploadDir(fullPathSrc, fullPathDst, root);
         }
       }
 
