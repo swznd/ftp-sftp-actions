@@ -52,13 +52,24 @@ const utils = require('./utils');
       if (json.files && Array.isArray(json.files)) {
         for(file of json.files) {
           let remoteFile = file.filename;
+          let remotePrev = file.previous_filename;
 
           if (['', './', '.'].indexOf(localPath) === -1 && file.filename.startsWith(localPath)) {
             remoteFile = file.filename.substr(localPath.length);
           }
 
+          if (remotePrev && ['', './', '.'].indexOf(localPath) === -1 && remotePrev.startsWith(localPath)) {
+            remotePrev = remotePrev.substr(localPath.length);
+          }
+
           if (file.status == 'renamed') {
-            parsedActions.push([file.changes ? 'upload' : 'move', path.join(remotePath, file.previous_filename), path.join(remotePath, remoteFile)]);
+            if (file.changes) {
+              parsedActions.push(['delete', path.join(remotePath, remotePrev)]);
+              parsedActions.push(['upload', file.filename, path.join(remotePath, remoteFile)]);
+            }
+            else {
+              parsedActions.push(['move', path.join(remotePath, remotePrev), path.join(remotePath, remoteFile)]);
+            }
           }
           else if (file.status == 'added' || file.status == 'modified') {
             parsedActions.push(['upload', file.filename, path.join(remotePath, remoteFile)]);
