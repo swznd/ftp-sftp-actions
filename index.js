@@ -177,10 +177,17 @@ const utils = require('./utils');
       }
   
       if (act.length > 1) {
-        if (act[0].toLowerCase() !== 'write' && 
-            ((['', './', '.'].indexOf(localPath) === -1 && ! act[1].startsWith(localPath)) ||
-            (ignore.length && micromatch.isMatch(act[1], ignore)))) {
-          
+        const action = act[0].toLowerCase();
+
+        if (action === 'upload' &&
+            ['', './', '.'].indexOf(localPath) === -1 &&
+            ! act[1].startsWith(localPath)) {
+          console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
+          continue;
+        }
+
+        if ((action === 'upload' || action === 'download') &&
+            ignore.length && micromatch.isMatch(act[1], ignore)) {
           console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
           continue;
         }
