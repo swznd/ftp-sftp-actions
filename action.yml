@@ -36,6 +36,10 @@ inputs:
     description: 'Ignore file/folders by glob matching'
     required: false
     default: '.github/**,.gitignore,**/.gitignore'
+  removeIgnoredFiles:
+    description: 'When true, scan the remote tree after upload and delete any file matching the ignore patterns, even if it no longer exists locally'
+    required: false
+    default: false
 runs:
   using: 'node12'
   main: 'index.js'

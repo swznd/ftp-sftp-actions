@@ -28,4 +28,12 @@ Secure connection options for ftp connection. Default `true`
 
 SSH private key to login sftp server, if you want to connect without password, you can save your private key in your repo settings -> secrets
 
+### `ignore`
+
+Ignore file/folders by glob matching (comma separated). Matched files are skipped during upload/download. Default `.github/**,.gitignore,**/.gitignore`
+
+### `removeIgnoredFiles`
+
+When `true`, after a directory upload the remote tree is scanned and any file/folder matching the `ignore` patterns is deleted from the remote — even if it no longer exists locally. Useful for cleaning up files that were deployed before being added to `ignore`. Default `false`
+
 ## Action Example

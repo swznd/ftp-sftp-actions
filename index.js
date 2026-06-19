@@ -22,7 +22,8 @@ const utils = require('./utils');
     const ignore = (core.getInput('ignore') || '').split(',').filter(Boolean);
     const actions = core.getInput('actions', { required: true }).split('\n').filter(Boolean);
     const debug = core.getInput('debug') === 'true'
-    
+    const removeIgnoredFiles = core.getInput('removeIgnoredFiles') === 'true';
+
     const availableActions = ['download', 'upload', 'write', 'move', 'delete', 'clean', 'rename'];
     let parsedActions = [];
     
@@ -162,6 +163,10 @@ const utils = require('./utils');
     if (ignore.length) {
       client.setFilter(ignore);
     }
+
+    if (removeIgnoredFiles) {
+      client.setRemoveIgnored(true);
+    }
   
     await client.connect(hostURL.hostname, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey, debug);
   
@@ -189,6 +194,11 @@ const utils = require('./utils');
         if ((action === 'upload' || action === 'download') &&
             ignore.length && micromatch.isMatch(act[1], ignore)) {
           console.warn(`${utils.capitalize(act[0])} Ignored: ${act[1]}`);
+
+          if (removeIgnoredFiles && action === 'upload' && act[2] && await client.exists(act[2])) {
+            await client.delete(act[2]);
+          }
+
           continue;
         }
       }

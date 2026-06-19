@@ -14,10 +14,19 @@ class Sftp extends EventEmitter {
     this.sshClient = null;
     this.sshConnected = false;
     this.filter = [];
+    this.removeIgnored = false;
   }
 
   setFilter(filter) {
     this.filter = filter;
+  }
+
+  setRemoveIgnored(removeIgnored) {
+    this.removeIgnored = removeIgnored;
+  }
+
+  async exists(file) {
+    return this.client.exists(file);
   }
 
   async connect(host, port, user, password, privateKey, debug) {
@@ -225,16 +234,49 @@ class Sftp extends EventEmitter {
           return true;
         });
       }
-  
+
       await this.client.uploadDir(path.join(src, tempSrc), dst);
-      
+
       if (tempSrc) {
         fse.removeSync(path.join(src, tempSrc));
+      }
+
+      if (this.removeIgnored && this.filter.length) {
+        await this._removeIgnoredFromRemote(dst, dst);
       }
     } catch(e) {
       console.error(e);
       this.emit('upload', { file: dst, status: false });
       return false;
+    }
+  }
+
+  async _removeIgnoredFromRemote(dst, root) {
+    if (root === undefined) root = dst;
+
+    if (await this.client.exists(dst) !== 'd') return;
+
+    let lists;
+    try {
+      lists = await this.client.list(dst);
+    } catch(e) {
+      return;
+    }
+
+    for (const list of lists) {
+      if (list.name === '.' || list.name === '..') continue;
+
+      const fullDst = path.join(dst, list.name);
+      const relPath = path.relative(root, fullDst);
+
+      if (micromatch.isMatch(relPath, this.filter)) {
+        await this.delete(fullDst);
+        continue;
+      }
+
+      if (list.type == 'd') {
+        await this._removeIgnoredFromRemote(fullDst, root);
+      }
     }
   }
 
