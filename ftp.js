@@ -64,7 +64,7 @@ class Ftp extends EventEmitter {
       
       return await this._downloadFile(src, dst);
     } catch(e) {
-      onsole.error(e);
+      console.error(e);
       this.emit('download', { file: src, status: false });
       return false;      
     }
@@ -99,8 +99,8 @@ class Ftp extends EventEmitter {
       await this._downloadFromDir(src, dst, root);
       return true;
     }
-    catch {
-      onsole.error(e);
+    catch (e) {
+      console.error(e);
       this.emit('download', { file: src, status: false });
     }
   }

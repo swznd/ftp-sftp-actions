@@ -1,5 +1,4 @@
 const core = require('@actions/core');
-const url = require('url');
 const path = require('path');
 const fs = require('fs');
 const micromatch = require('micromatch');
@@ -27,17 +26,17 @@ const utils = require('./utils');
     const availableActions = ['download', 'upload', 'write', 'move', 'delete', 'clean', 'rename'];
     let parsedActions = [];
     
-    const hostURL = url.parse(host);
+    const hostURL = new URL(host);
   
-    if (user) hostURL.username = user;
-    if (password) hostURL.password = password;
+    const username = user || decodeURIComponent(hostURL.username);
+    const userPassword = password || decodeURIComponent(hostURL.password);
   
-    if (hostURL.username == '') {
+    if ( ! username) {
       core.setFailed('User is required');
     }
   
-    if (hostURL.pass == '') {
-      core.setFailed('Password is required');
+    if (hostURL.protocol === 'sftp:' && ! userPassword && ! privateKey) {
+      core.setFailed('Password or private key is required for SFTP');
     }
   
     if (['ftp:', 'sftp:'].indexOf(hostURL.protocol) === -1) {
@@ -51,7 +50,7 @@ const utils = require('./utils');
     const parseJsonAction = (action) => {
       const json = JSON.parse(action);
       if (json.files && Array.isArray(json.files)) {
-        for(file of json.files) {
+        for(const file of json.files) {
           let remoteFile = file.filename;
           let remotePrev = file.previous_filename;
 
@@ -81,7 +80,7 @@ const utils = require('./utils');
         }
       }
       else if (Array.isArray(json)) {
-        for(file of json) {
+        for(const file of json) {
           let remoteFile = file.path;
 
           if (['', './', '.'].indexOf(localPath) === -1 && file.path.startsWith(localPath)) {
@@ -168,7 +167,7 @@ const utils = require('./utils');
       client.setRemoveIgnored(true);
     }
   
-    await client.connect(hostURL.hostname, hostURL.port, hostURL.username, hostURL.password, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey, debug);
+    await client.connect(hostURL.hostname, hostURL.port, username, userPassword, hostURL.protocol == 'ftp:' ? (secure && secure !== 'false' ? true : false) : privateKey, debug);
   
     for (const act of parsedActions) {
       if (availableActions.indexOf(act[0]) === -1) {
